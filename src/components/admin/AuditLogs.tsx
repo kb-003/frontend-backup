@@ -245,7 +245,7 @@ const AuditLogs = ({ lastSyncTime }: AuditLogsProps) => {
                             "MMM d, yyyy HH:mm",
                           )}
                         </TableCell>
-                        <TableCell className="text-sm max-w-[200px] truncate">
+                        <TableCell className="text-sm max-w-[200px] whitespace-normal break-words">
                           {log.details || "—"}
                         </TableCell>
                       </TableRow>

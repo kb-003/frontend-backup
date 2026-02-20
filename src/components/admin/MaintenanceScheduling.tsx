@@ -93,8 +93,10 @@ const MaintenanceScheduling = ({
     resourceId: "",
     taskType: "Inspection" as "Inspection" | "Repair" | "Replacement",
     status: "Pending" as "Pending" | "In Progress" | "Completed",
+    scheduledDate: "",
     assignedTo: "",
     notes: "",
+
   });
 
   const getUserName = (assignedTo: any) => {
@@ -113,7 +115,7 @@ const MaintenanceScheduling = ({
     return tasks.filter((task) => {
       const matchesSearch =
         task.resourceId.toLowerCase().includes(search.toLowerCase()) ||
-        task.id.toLowerCase().includes(search.toLowerCase()) ||
+        task._id.toLowerCase().includes(search.toLowerCase()) ||
         (task.notes?.toLowerCase().includes(search.toLowerCase()) ?? false);
       const matchesStatus =
         statusFilter === "All" || task.status === statusFilter;
@@ -193,12 +195,11 @@ const MaintenanceScheduling = ({
       return;
     }
 
-    // Debug: check what’s inside formData before building newTask
-    console.log("formData before submit:", formData);
-
     const newTask = {
       ...formData,
-      scheduledDate: format(scheduledDate, "yyyy-MM-dd"),
+      scheduledDate: tasks.scheduledDate
+        ? new Date(tasks.scheduledDate)
+        : undefined,
     };
 
     try {
@@ -250,32 +251,39 @@ const MaintenanceScheduling = ({
       status: task.status,
       assignedTo: task.assignedTo || "",
       notes: task.notes || "",
+      scheduledDate: task.scheduledDate
+        ? new Date(task.scheduledDate)
+        : undefined,
     });
-    setScheduledDate(new Date(task.scheduledDate));
     setIsEditTaskOpen(true);
   };
 
-  const handleEditTask = () => {
-    if (!selectedTask || !scheduledDate) return;
-    const updatedTasks = tasks.map((t) =>
-      t.id === selectedTask.id
-        ? {
-            ...t,
-            ...formData,
-            scheduledDate: format(scheduledDate, "yyyy-MM-dd"),
-            completedDate:
-              formData.status === "Completed" && t.status !== "Completed"
-                ? format(new Date(), "yyyy-MM-dd")
-                : t.completedDate,
-          }
-        : t,
-    );
-    setTasks(updatedTasks);
-    localStorage.setItem("maintenanceTasks", JSON.stringify(updatedTasks));
-    toast.success("Task updated successfully");
-    setIsEditTaskOpen(false);
-    setSelectedTask(null);
-    resetForm();
+  const handleEditTask = async () => {
+    if (!selectedTask || !formData.scheduledDate) return;
+
+    const updatedData = {
+      ...formData,
+      scheduledDate: format(scheduledDate, "yyyy-MM-dd"),
+      completedDate:
+        formData.status === "Completed" && selectedTask.status !== "Completed"
+          ? format(new Date(), "yyyy-MM-dd")
+          : undefined,
+    };
+    try {
+      const res = await apiRequest(`/api/tasks/${selectedTask._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedData),
+      });
+      setTasks(tasks.map((t) => (t._id === selectedTask._id ? res.task : t)));
+      toast.success("Task updated successfully");
+      setIsEditTaskOpen(false);
+      setSelectedTask(null);
+      resetForm();
+    } catch (err) {
+      console.error("Failed to update task", err);
+      toast.error("Could not update task");
+    }
   };
 
   const markAsCompleted = async (taskId: string) => {
@@ -302,19 +310,22 @@ const MaintenanceScheduling = ({
 
   const resourceOptions =
     formData.resourceType === "Hydrant"
-      ? hydrants.map((h) => ({ id: h.hydrantID, label: h.hydrantID }))
+      ? hydrants.map((h) => ({ id: h.hydrantId, label: h.hydrantId }))
       : waterSources.map((w) => ({ id: w.id, label: w.name }));
 
   // Use role-based filtering for assignable users
   const assignableUsers = useMemo(() => {
     if (!currentUser) return users;
-    return getAssignableUsers(users, currentUser.role);
+    return getAssignableUsers(users as any, currentUser.role);
   }, [users, currentUser]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+        <div
+          className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-yellow-500
+ flex items-center justify-center"
+        >
           <Wrench className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -434,8 +445,8 @@ const MaintenanceScheduling = ({
                 </TableRow>
               ) : (
                 filteredTasks.map((task) => (
-                  <TableRow key={task.id} className="hover:bg-muted/30">
-                    <TableCell className="font-medium">{task.id}</TableCell>
+                  <TableRow key={task._id} className="hover:bg-muted/30">
+                    <TableCell className="font-medium">{task._id}</TableCell>
                     <TableCell>
                       <div className="text-sm">
                         <span className="text-muted-foreground">
@@ -590,7 +601,17 @@ const MaintenanceScheduling = ({
                   <Calendar
                     mode="single"
                     selected={scheduledDate}
-                    onSelect={setScheduledDate}
+                    onSelect={(date) => {
+                      if (
+                        scheduledDate &&
+                        date?.getTime() === scheduledDate.getTime()
+                      ) {
+                        // clicked the same date again → unselect
+                        setScheduledDate(undefined);
+                      } else {
+                        setScheduledDate(date);
+                      }
+                    }}
                     initialFocus
                     className="p-3 pointer-events-auto"
                   />
@@ -694,7 +715,17 @@ const MaintenanceScheduling = ({
                   <Calendar
                     mode="single"
                     selected={scheduledDate}
-                    onSelect={setScheduledDate}
+                    onSelect={(date) => {
+                      if (
+                        scheduledDate &&
+                        date?.getTime() === scheduledDate.getTime()
+                      ) {
+                        // clicked the same date again → unselect
+                        setScheduledDate(undefined);
+                      } else {
+                        setScheduledDate(date);
+                      }
+                    }}
                     initialFocus
                     className="p-3 pointer-events-auto"
                   />

@@ -17,7 +17,6 @@ import {
   type WaterSource,
   type User,
   type MaintenanceTask,
-  type ActivityLog,
 } from "@/data/mockData";
 
 const Admin = () => {
@@ -35,7 +34,7 @@ const Admin = () => {
   const [maintenanceTasks, setMaintenanceTasks] = useState<MaintenanceTask[]>(
     [],
   );
-  const [activityLogs] = useState<ActivityLog[]>([]);
+  const [activityLogs] = useState<any[]>([]);
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
@@ -55,20 +54,24 @@ const Admin = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const transformed = data.map((h: any) => ({
-          hydrantID: h.hydrantId,
+        const transformed = data.map((h: any, i: number) => ({
+          ...h,
+          _id: h._id ?? `hydrant-${i}`,
+          hydrantId: h.hydrantId || "N/A",
           status:
             h.status === "operational"
               ? "Operational"
               : h.status === "under maintenance"
                 ? "Under Maintenance"
-                : "Unavailable",
-          remarks: h.remark,
-          address: h.address,
-          landmark: h.landmark,
-          coordinates: h.location?.coordinates || [0, 0],
+                : h.status === "Unavailable" || h.status === "unavailable"
+                  ? "Unavailable"
+                  : h.status || "Unavailable",
+          remark: h.remark || "N/A",
+          address: h.address || "N/A",
+          landmark: h.landmark || "N/A",
+          location: h.location || { type: "Point", coordinates: [] },
         }));
-
+        
         setHydrants(transformed);
       } catch (err) {
         console.error("Failed to fetch hydrants", err);
@@ -84,18 +87,16 @@ const Admin = () => {
         });
 
         const transformed = data.map((w: any) => ({
-          sourceID: w.sourceId,
-          type: w.type,
-          capacity: w.capacity,
-          status:
-            w.status === "available"
-              ? "Available"
-              : w.status === "under maintenance"
-                ? "Under Maintenance"
-                : "Unavailable",
-          address: w.address,
-          landmark: w.landmark,
-          coordinates: w.location?.coordinates || [0, 0],
+          id: w._id,
+          sourceId: w.sourceId,
+          name: w.name || "",
+          type: w.type || "River",
+          roadWidth: w.roadWidth?.toString() || "",
+          landmark: w.landmark || "",
+          coordinates: [
+            w.longitude ?? w.location?.coordinates?.[0] ?? 0,
+            w.latitude ?? w.location?.coordinates?.[1] ?? 0,
+          ] as [number, number],
         }));
 
         setWaterSources(transformed);
@@ -189,7 +190,6 @@ const Admin = () => {
 
           {activeTab === "audit-logs" && (
             <AuditLogs
-              activityLogs={activityLogs}
               incidents={incidentHistory}
               lastSyncTime={lastSyncTime}
             />

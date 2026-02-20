@@ -158,7 +158,7 @@ const SystemControl = ({
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-emerald-500 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
           <Settings2 className="w-5 h-5 text-white" />
         </div>
         <div>

@@ -409,7 +409,7 @@ const ResourceManagement = ({
     });
   };
 
-  const handleAddWaterSource = () => {
+  const handleAddWaterSource = async () => {
     if (
       !waterSourceFormData.id ||
       !waterSourceFormData.name ||
@@ -421,26 +421,49 @@ const ResourceManagement = ({
       toast.error("Please fill in all required fields");
       return;
     }
-    const newWaterSource: WaterSource = {
-      id: waterSourceFormData.id,
+    const newWaterSource = {
+      sourceId: waterSourceFormData.id,
       name: waterSourceFormData.name,
       type: waterSourceFormData.type,
-      roadWidth: waterSourceFormData.roadWidth,
+      roadWidth: parseFloat(waterSourceFormData.roadWidth), // convert to number
       landmark: waterSourceFormData.landmark,
-      coordinates: [
-        parseFloat(waterSourceFormData.longitude),
-        parseFloat(waterSourceFormData.latitude),
-      ],
+      latitude: parseFloat(waterSourceFormData.latitude),
+      longitude: parseFloat(waterSourceFormData.longitude),
+      location: {
+        type: "Point",
+        coordinates: [
+          parseFloat(waterSourceFormData.longitude),
+          parseFloat(waterSourceFormData.latitude),
+        ],
+      },
     };
-    const updatedWaterSources = [...waterSources, newWaterSource];
-    setWaterSources(updatedWaterSources);
-    localStorage.setItem(
-      "adminWaterSources",
-      JSON.stringify(updatedWaterSources),
-    );
-    toast.success("Water source added successfully");
-    setIsAddWaterSourceOpen(false);
-    resetWaterSourceForm();
+
+    try {
+      const token = localStorage.getItem("token");
+      const created = await apiRequest("/api/water-sources", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(newWaterSource),
+      });
+      setWaterSources([
+        ...waterSources,
+        {
+          id: created._id,
+          sourceId: created.sourceId,
+          name: created.name,
+          type: created.type,
+          roadWidth: created.roadWidth,
+          landmark: created.landmark,
+          coordinates: created.location?.coordinates || [0, 0],
+        },
+      ]);
+      toast.success("Water source added successfully");
+      setIsAddWaterSourceOpen(false);
+      resetWaterSourceForm();
+    } catch (err) {
+      console.error("Failed to add water source", err);
+      toast.error("Could not add water source");
+    }
   };
 
   const openEditWaterSourceDialog = (waterSource: WaterSource) => {
@@ -457,45 +480,77 @@ const ResourceManagement = ({
     setIsEditWaterSourceOpen(true);
   };
 
-  const handleEditWaterSource = () => {
+  const handleEditWaterSource = async () => {
     if (!selectedWaterSource) return;
-    const updatedWaterSources = waterSources.map((w) =>
-      w.id === selectedWaterSource.id
-        ? {
-            ...w,
-            name: waterSourceFormData.name,
-            type: waterSourceFormData.type,
-            roadWidth: waterSourceFormData.roadWidth,
-            landmark: waterSourceFormData.landmark,
-            coordinates: [
-              parseFloat(waterSourceFormData.longitude),
-              parseFloat(waterSourceFormData.latitude),
-            ] as [number, number],
-          }
-        : w,
-    );
-    setWaterSources(updatedWaterSources);
-    localStorage.setItem(
-      "adminWaterSources",
-      JSON.stringify(updatedWaterSources),
-    );
-    toast.success("Water source updated successfully");
-    setIsEditWaterSourceOpen(false);
-    setSelectedWaterSource(null);
-    resetWaterSourceForm();
+
+    const updatedData = {
+      name: waterSourceFormData.name,
+      type: waterSourceFormData.type,
+      roadWidth: waterSourceFormData.roadWidth,
+      landmark: waterSourceFormData.landmark,
+      location: {
+        type: "Point",
+        coordinates: [
+          parseFloat(waterSourceFormData.longitude),
+          parseFloat(waterSourceFormData.latitude),
+        ],
+      },
+    };
+
+    try {
+      const token = localStorage.getItem("token");
+      await apiRequest(`/api/water-sources/${selectedWaterSource.id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(updatedData),
+      });
+
+      const updatedWaterSources = waterSources.map((w) =>
+        w.id === selectedWaterSource.id
+          ? {
+              ...w,
+              name: waterSourceFormData.name,
+              type: waterSourceFormData.type,
+              roadWidth: waterSourceFormData.roadWidth,
+              landmark: waterSourceFormData.landmark,
+              coordinates: [
+                parseFloat(waterSourceFormData.longitude),
+                parseFloat(waterSourceFormData.latitude),
+              ] as [number, number],
+            }
+          : w,
+      );
+
+      setWaterSources(updatedWaterSources);
+      toast.success("Water source updated successfully");
+      setIsEditWaterSourceOpen(false);
+      setSelectedWaterSource(null);
+      resetWaterSourceForm();
+    } catch (err) {
+      console.error("Failed to update water source", err);
+      toast.error("Could not update water source");
+    }
   };
 
-  const handleDeleteWaterSource = () => {
+  const handleDeleteWaterSource = async () => {
     if (!selectedWaterSource) return;
-    const updatedWaterSources = waterSources.filter(
-      (w) => w.id !== selectedWaterSource.id,
-    );
-    setWaterSources(updatedWaterSources);
-    localStorage.setItem(
-      "adminWaterSources",
-      JSON.stringify(updatedWaterSources),
-    );
-    toast.success("Water source deleted successfully");
+
+    try {
+      const token = localStorage.getItem("token");
+      await apiRequest(`/api/water-sources/${selectedWaterSource.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setWaterSources(
+        waterSources.filter((w) => w.id !== selectedWaterSource.id),
+      );
+      toast.success("Water source deleted successfully");
+    } catch (err) {
+      console.error("Failed to delete water source", err);
+      toast.error("Could not delete water source");
+    }
+
     setIsDeleteWaterSourceOpen(false);
     setSelectedWaterSource(null);
   };
@@ -968,7 +1023,9 @@ const ResourceManagement = ({
                   <TableRow className="bg-muted/50">
                     <TableHead className="font-semibold">Name</TableHead>
                     <TableHead className="font-semibold">Type</TableHead>
-                    <TableHead className="font-semibold">Road Width</TableHead>
+                    <TableHead className="font-semibold">
+                      Road Width (m)
+                    </TableHead>
                     <TableHead className="font-semibold">Landmark</TableHead>
                     <TableHead className="font-semibold">Coordinates</TableHead>
                     <TableHead className="font-semibold text-right">
@@ -1170,7 +1227,7 @@ const ResourceManagement = ({
                                     setResetPasswordUserId(user.id);
                                     setIsResetPasswordOpen(true);
                                   }}
-                                  className="bg-orange-500 text-white hover:bg-yellow-500 hover:text-white"
+                                  className="bg-primary"
                                 >
                                   Reset Password
                                 </Button>
@@ -1273,7 +1330,7 @@ const ResourceManagement = ({
               />
             </div>
             <div>
-              <Label htmlFor="hydrant-remark">remark</Label>
+              <Label htmlFor="hydrant-remark">Remark</Label>
               <Input
                 id="hydrant-remark"
                 value={hydrantFormData.remark}
@@ -1398,7 +1455,7 @@ const ResourceManagement = ({
               />
             </div>
             <div>
-              <Label>remark</Label>
+              <Label>Remark</Label>
               <Input
                 value={hydrantFormData.remark}
                 onChange={(e) =>
@@ -1516,20 +1573,6 @@ const ResourceManagement = ({
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="ws-id">Water Source ID *</Label>
-              <Input
-                id="ws-id"
-                placeholder="e.g., WS-001"
-                value={waterSourceFormData.id}
-                onChange={(e) =>
-                  setWaterSourceFormData({
-                    ...waterSourceFormData,
-                    id: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
               <Label htmlFor="ws-name">Name *</Label>
               <Input
                 id="ws-name"
@@ -1565,10 +1608,10 @@ const ResourceManagement = ({
               </Select>
             </div>
             <div>
-              <Label htmlFor="ws-width">Road Width *</Label>
+              <Label htmlFor="ws-width">Road Width (in meters) *</Label>
               <Input
                 id="ws-width"
-                placeholder="e.g., 8m"
+                placeholder="e.g., 8"
                 value={waterSourceFormData.roadWidth}
                 onChange={(e) =>
                   setWaterSourceFormData({
@@ -1656,14 +1699,6 @@ const ResourceManagement = ({
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>Water Source ID</Label>
-              <Input
-                value={waterSourceFormData.id}
-                disabled
-                className="bg-muted"
-              />
-            </div>
-            <div>
               <Label>Name *</Label>
               <Input
                 value={waterSourceFormData.name}
@@ -1697,7 +1732,7 @@ const ResourceManagement = ({
               </Select>
             </div>
             <div>
-              <Label>Road Width *</Label>
+              <Label>Road Width (in meters) *</Label>
               <Input
                 value={waterSourceFormData.roadWidth}
                 onChange={(e) =>
