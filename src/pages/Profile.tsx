@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { Map as MapIcon, Settings, HelpCircle, User, LogOut, Mail, Phone, MapPin
 import { toast } from "sonner";
 import { z } from "zod";
 import bfpLogo from "@/assets/bfp-logo.png";
+import { logout } from "@/lib/utils";
 
 // Validation schema
 const contactSchema = z.object({
@@ -46,11 +48,7 @@ const Profile = () => {
 
   const [errors, setErrors] = useState<{ email?: string; phone?: string }>({});
 
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    toast.success("Logged out successfully");
-    navigate("/");
-  };
+  const handleLogout = () => { logout(); };
 
   const handleEditContact = () => {
     setEditedContact({

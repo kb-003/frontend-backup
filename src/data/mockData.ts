@@ -1,4 +1,5 @@
 import type { AppRole, Team } from "@/lib/roles";
+import { GeoPoint } from "@/lib/geo";
 
 export interface Hydrant {
   _id: string;
@@ -7,19 +8,17 @@ export interface Hydrant {
   remark: string; 
   address: string;
   landmark: string;
-  location: {
-    type: "Point";
-    coordinates: [number | null, number | null];
-  };
+  location: GeoPoint;
 }
 
 export interface WaterSource {
   id: string;
+  sourceId: string;
   name: string;
   type: "River" | "Well" | "Sea";
-  roadWidth: string;
+  roadWidth: number;
   landmark: string;
-  coordinates: [number, number];
+  location: GeoPoint;
 }
 
 export interface FireStation {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+const MAPBOX_TOKEN = "pk.eyJ1IjoiYXplbC0xOCIsImEiOiJjbWtuczJsMmgwNGE4M2ZweWI1eHdjMmhpIn0.NH9b6UmVzjH2WDuMULvNJQ";
 
 export interface GeocodeSuggestion {
   id: string;

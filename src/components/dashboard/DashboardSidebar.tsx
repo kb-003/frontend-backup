@@ -1,15 +1,20 @@
-import { cn } from "@/lib/utils";
-import { 
-  Map as MapIcon, 
-  Settings, 
-  HelpCircle, 
+import { cn, logout } from "@/lib/utils";
+import {
+  Map as MapIcon,
+  Settings,
+  HelpCircle,
   User,
   ChevronLeft,
   ChevronRight,
-  LogOut
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -29,21 +34,24 @@ const navItems = [
   { id: "profile" as DashboardTab, label: "Profile", icon: User },
 ];
 
-const DashboardSidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }: DashboardSidebarProps) => {
+const DashboardSidebar = ({
+  activeTab,
+  setActiveTab,
+  isCollapsed,
+  setIsCollapsed,
+}: DashboardSidebarProps) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    toast.success("Logged out successfully");
-    navigate("/");
+    logout();
   };
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div 
+      <div
         className={cn(
           "bg-card border-r flex flex-col transition-all duration-300 relative flex-shrink-0",
-          isCollapsed ? "w-16" : "w-56"
+          isCollapsed ? "w-16" : "w-56",
         )}
       >
         {/* Toggle Button */}
@@ -72,13 +80,18 @@ const DashboardSidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed
                 onClick={() => setActiveTab(item.id)}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all text-left",
-                  isActive 
-                    ? "bg-gradient-to-r from-[hsl(var(--fire-orange))] to-[hsl(var(--fire-red))] text-white shadow-sm" 
+                  isActive
+                    ? "bg-gradient-to-r from-[hsl(var(--fire-orange))] to-[hsl(var(--fire-red))] text-white shadow-sm"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  isCollapsed && "justify-center px-2"
+                  isCollapsed && "justify-center px-2",
                 )}
               >
-                <Icon className={cn("w-6 h-6 flex-shrink-0", isActive && "text-white")} />
+                <Icon
+                  className={cn(
+                    "w-6 h-6 flex-shrink-0",
+                    isActive && "text-white",
+                  )}
+                />
                 {!isCollapsed && (
                   <span className="text-base font-medium">{item.label}</span>
                 )}
@@ -89,7 +102,10 @@ const DashboardSidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed
               return (
                 <Tooltip key={item.id}>
                   <TooltipTrigger asChild>{button}</TooltipTrigger>
-                  <TooltipContent side="right" className="bg-popover text-popover-foreground">
+                  <TooltipContent
+                    side="right"
+                    className="bg-popover text-popover-foreground"
+                  >
                     {item.label}
                   </TooltipContent>
                 </Tooltip>
@@ -112,7 +128,10 @@ const DashboardSidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed
                   <LogOut className="w-6 h-6 flex-shrink-0" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="right" className="bg-popover text-popover-foreground">
+              <TooltipContent
+                side="right"
+                className="bg-popover text-popover-foreground"
+              >
                 Logout
               </TooltipContent>
             </Tooltip>

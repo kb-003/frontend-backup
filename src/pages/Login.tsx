@@ -40,26 +40,24 @@ const Login = () => {
         }),
       });
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("currentUser", JSON.stringify(data.user));
-
-      // Use backend role directly
+      // ✅ Store token under role-specific key
       const role = data.user.role;
-      let team: Team = getTeamForRole(role);
+      switch (role) {
+        case "Chief":
+        case "Shift-in-Charge A":
+        case "Shift-in-Charge B":
+          localStorage.setItem("adminToken", data.token);
+          break;
+        case "Driver":
+        case "Crew":
+          localStorage.setItem("crewToken", data.token);
+          break;
+        default:
+          localStorage.setItem("token", data.token); // fallback
+      }
 
-      /*
-      const role = getRoleFromIdPrefix(firefighterId);
-      let team: Team = getTeamForRole(role);
-      if (!team && role !== "Chief") {
-        try {
-          const adminUsers = JSON.parse(localStorage.getItem("adminUsers") || "[]");
-          const found = adminUsers.find((u: any) => u.id === firefighterId);
-          if (found?.team) team = found.team;
-        } catch {}
-      }*/
-
+      // Build user object
       const isFirstLogin = data.isFirstLogin ?? false;
-
       const user = {
         id: firefighterId,
         firefighterID: firefighterId,
@@ -68,12 +66,13 @@ const Login = () => {
         email: data.user.email,
         contact: data.user.contact,
         role,
-        team,
+        assignToShift: data.user.AssignToShift, // ✅ use backend field
         isFirstLogin,
       };
 
       localStorage.setItem("currentUser", JSON.stringify(user));
 
+      // ✅ Navigate based on role
       if (isFirstLogin) {
         toast.info("First-Time Login", {
           description: "Please change your default password to continue.",
@@ -81,16 +80,19 @@ const Login = () => {
         navigate("/change-password");
       } else {
         toast.success("Login Successful");
-        navigate(isAdminRole(role) ? "/admin" : "/dashboard");
+        navigate(
+          role === "Chief" || role.startsWith("Shift-in-Charge")
+            ? "/admin"
+            : "/dashboard",
+        );
       }
     } catch (err: unknown) {
-  if (err instanceof Error) {
-    toast.error("Invalid Login", { description: err.message });
-  } else {
-    toast.error("Invalid Login", { description: "Incorrect credentials." });
-  }
-}
-
+      if (err instanceof Error) {
+        toast.error("Invalid Login", { description: err.message });
+      } else {
+        toast.error("Invalid Login", { description: "Incorrect credentials." });
+      }
+    }
   };
 
   return (

@@ -12,6 +12,7 @@ import IncidentTracking from "@/components/admin/IncidentTracking";
 import MaintenanceScheduling from "@/components/admin/MaintenanceScheduling";
 import AuditLogs from "@/components/admin/AuditLogs";
 import SystemControl from "@/components/admin/SystemControl";
+import { logout } from "@/lib/utils";
 import {
   type Hydrant,
   type WaterSource,
@@ -36,11 +37,7 @@ const Admin = () => {
   );
   const [activityLogs] = useState<any[]>([]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    toast.success("Logged out successfully");
-    navigate("/");
-  };
+ const handleLogout = () => { logout(); };
 
   const lastSyncTime = localStorage.getItem("lastSyncTime");
 

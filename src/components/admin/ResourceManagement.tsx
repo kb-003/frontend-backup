@@ -1,7 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useCallback, useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { capitalizeWords } from "@//lib/utils";
 import { apiRequest } from "@/lib/api";
+import { GeoPoint } from "@/lib/geo";
 import { Label } from "@/components/ui/label";
 import {
   Tooltip,
@@ -219,15 +222,38 @@ const ResourceManagement = ({
   // Normalize hydrants
   const normalizeHydrant = (h: any, index?: number) => ({
     ...h,
-    _id: h._id ?? h.id ?? `temp-${index}`, // <-- FIXED
+    _id: h._id ?? h.id ?? `temp-${index}`,
     hydrantId: h.hydrantId || "N/A",
     status:
       h.status?.charAt(0).toUpperCase() + h.status?.slice(1).toLowerCase(),
     remark: h.remark || "N/A",
     address: h.address || "N/A",
     landmark: h.landmark || "N/A",
-    location: h.location || { type: "Point", coordinates: [] },
+    location: (h.location ?? {
+      type: "Point",
+      coordinates: [0, 0],
+    }) as GeoPoint,
   });
+
+  const normalizeWaterSource = (w: any, index?: number) => {
+    const coords = w.location?.coordinates ?? [
+      parseFloat(w.longitude) || null,
+      parseFloat(w.latitude) || null,
+    ];
+
+    return {
+      ...w,
+      _id: w._id ?? w.id ?? `temp-${index}`,
+      name: w.name || "N/A",
+      type: w.type || "N/A",
+      roadWidth: w.roadWidth ?? 0,
+      landmark: w.landmark || "N/A",
+      location: {
+        type: w.location?.type || "Point",
+        coordinates: coords,
+      } as GeoPoint,
+    };
+  };
 
   const fetchHydrants = useCallback(async () => {
     setIsLoading(true); // START loading
@@ -277,7 +303,7 @@ const ResourceManagement = ({
           parseFloat(hydrantFormData.longitude),
           parseFloat(hydrantFormData.latitude),
         ],
-      },
+      } satisfies GeoPoint,
     };
 
     try {
@@ -339,8 +365,8 @@ const ResourceManagement = ({
         coordinates: [
           parseFloat(hydrantFormData.longitude),
           parseFloat(hydrantFormData.latitude),
-        ] as [number, number],
-      },
+        ],
+      } satisfies GeoPoint,
     };
 
     try {
@@ -411,7 +437,6 @@ const ResourceManagement = ({
 
   const handleAddWaterSource = async () => {
     if (
-      !waterSourceFormData.id ||
       !waterSourceFormData.name ||
       !waterSourceFormData.roadWidth ||
       !waterSourceFormData.landmark ||
@@ -422,20 +447,17 @@ const ResourceManagement = ({
       return;
     }
     const newWaterSource = {
-      sourceId: waterSourceFormData.id,
-      name: waterSourceFormData.name,
+      name: capitalizeWords(waterSourceFormData.name),
       type: waterSourceFormData.type,
       roadWidth: parseFloat(waterSourceFormData.roadWidth), // convert to number
-      landmark: waterSourceFormData.landmark,
-      latitude: parseFloat(waterSourceFormData.latitude),
-      longitude: parseFloat(waterSourceFormData.longitude),
+      landmark: capitalizeWords(waterSourceFormData.landmark),
       location: {
         type: "Point",
         coordinates: [
           parseFloat(waterSourceFormData.longitude),
           parseFloat(waterSourceFormData.latitude),
         ],
-      },
+      } satisfies GeoPoint,
     };
 
     try {
@@ -454,7 +476,7 @@ const ResourceManagement = ({
           type: created.type,
           roadWidth: created.roadWidth,
           landmark: created.landmark,
-          coordinates: created.location?.coordinates || [0, 0],
+          location: created.location,
         },
       ]);
       toast.success("Water source added successfully");
@@ -472,10 +494,10 @@ const ResourceManagement = ({
       id: waterSource.id,
       name: waterSource.name,
       type: waterSource.type,
-      roadWidth: waterSource.roadWidth,
+      roadWidth: waterSource.roadWidth.toString(),
       landmark: waterSource.landmark,
-      latitude: waterSource.coordinates[1].toString(),
-      longitude: waterSource.coordinates[0].toString(),
+      latitude: waterSource.location.coordinates[1].toString(),
+      longitude: waterSource.location.coordinates[0].toString(),
     });
     setIsEditWaterSourceOpen(true);
   };
@@ -484,17 +506,17 @@ const ResourceManagement = ({
     if (!selectedWaterSource) return;
 
     const updatedData = {
-      name: waterSourceFormData.name,
+      name: capitalizeWords(waterSourceFormData.name),
       type: waterSourceFormData.type,
-      roadWidth: waterSourceFormData.roadWidth,
-      landmark: waterSourceFormData.landmark,
+      roadWidth: parseFloat(waterSourceFormData.roadWidth),
+      landmark: capitalizeWords(waterSourceFormData.landmark),
       location: {
         type: "Point",
         coordinates: [
           parseFloat(waterSourceFormData.longitude),
           parseFloat(waterSourceFormData.latitude),
         ],
-      },
+      } satisfies GeoPoint,
     };
 
     try {
@@ -509,14 +531,17 @@ const ResourceManagement = ({
         w.id === selectedWaterSource.id
           ? {
               ...w,
-              name: waterSourceFormData.name,
+              name: capitalizeWords(waterSourceFormData.name),
               type: waterSourceFormData.type,
-              roadWidth: waterSourceFormData.roadWidth,
-              landmark: waterSourceFormData.landmark,
-              coordinates: [
-                parseFloat(waterSourceFormData.longitude),
-                parseFloat(waterSourceFormData.latitude),
-              ] as [number, number],
+              roadWidth: parseFloat(waterSourceFormData.roadWidth),
+              landmark: capitalizeWords(waterSourceFormData.landmark),
+              location: {
+                type: "Point",
+                coordinates: [
+                  parseFloat(waterSourceFormData.longitude),
+                  parseFloat(waterSourceFormData.latitude),
+                ],
+              } satisfies GeoPoint,
             }
           : w,
       );
@@ -1059,8 +1084,13 @@ const ResourceManagement = ({
                         <TableCell className="text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <MapPin className="w-3 h-3" />
-                            {source.coordinates[1].toFixed(4)},{" "}
-                            {source.coordinates[0].toFixed(4)}
+                            {source.location?.coordinates?.[1] !== undefined
+                              ? source.location.coordinates[1].toFixed(4)
+                              : "N/A"}
+                            ,{" "}
+                            {source.location?.coordinates?.[0] !== undefined
+                              ? source.location.coordinates[0].toFixed(4)
+                              : "N/A"}
                           </div>
                         </TableCell>
                         <TableCell>

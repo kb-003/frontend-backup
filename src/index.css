@@ -118,3 +118,38 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Remove default Mapbox popup white box */
+.mapboxgl-popup-content {
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Remove the triangle tip */
+.mapboxgl-popup-tip {
+  display: none !important;
+}
+
+/* Make popup responsive */
+.mapboxgl-popup {
+  max-width: 90vw !important;
+}
+
+/* Fix close button positioning */
+.mapboxgl-popup-close-button {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 18px;
+  color: #6b7280; /* gray-500 */
+  padding: 4px;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+/* Optional: cleaner hover effect */
+.mapboxgl-popup-close-button:hover {
+  background-color: #f3f4f6; /* gray-100 */
+  color: #111827; /* darker */
+}

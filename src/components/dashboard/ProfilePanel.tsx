@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { User, Shield, LogOut, Key, Pencil, Camera, X, Check } from "lucide-react";
 import { toast } from "sonner";
+import { logout } from "@/lib/utils";
 
 const ProfilePanel = () => {
   const navigate = useNavigate();
@@ -50,11 +51,7 @@ const ProfilePanel = () => {
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    toast.success("Logged out successfully");
-    navigate("/");
-  };
+  const handleLogout = () => { logout(); };
 
   const handleChangePassword = () => {
     navigate("/change-password");
